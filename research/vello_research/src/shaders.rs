@@ -54,7 +54,9 @@ pub(crate) fn full_shaders(
     use BindType::*;
 
     let mut force_gpu = false;
-    let force_gpu_from: Option<&str> = None;
+    // TRACERY EXPERIMENT HOOK: VELLO_EXP_GPU_FROM=<stage> (with RendererOptions::use_cpu).
+    let force_gpu_from_env = std::env::var("VELLO_EXP_GPU_FROM").ok();
+    let force_gpu_from: Option<&str> = force_gpu_from_env.as_deref();
     // Uncomment this to force use of GPU shaders from the specified shader and later even
     // if `engine.use_cpu` is specified.
     //let force_gpu_from = Some("binning");

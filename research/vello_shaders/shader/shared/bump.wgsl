@@ -19,6 +19,8 @@ struct BumpAllocators {
     segments: atomic<u32>,
     blend: atomic<u32>,
     lines: atomic<u32>,
+    // TRACERY EXPERIMENT: free-form debug words (mirrors `BumpAllocators::dbg`).
+    dbg: array<atomic<u32>, 8>,
 }
 
 struct IndirectCount {

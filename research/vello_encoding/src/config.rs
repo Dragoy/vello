@@ -34,6 +34,8 @@ pub struct BumpAllocators {
     pub segments: u32,
     pub blend: u32,
     pub lines: u32,
+    /// TRACERY EXPERIMENT: free-form debug words written by instrumented shaders.
+    pub dbg: [u32; 8],
 }
 
 #[derive(Default)]

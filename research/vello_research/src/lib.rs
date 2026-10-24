@@ -729,7 +729,10 @@ impl Renderer {
         // TODO: turn this on; the download feature interacts with CPU dispatch.
         // Currently this is always enabled when the `debug_layers` setting is enabled as the bump
         // counts are used for debug visualiation.
-        let robust = cfg!(feature = "debug_layers");
+        // TRACERY EXPERIMENT HOOK: VELLO_EXP_ROBUST=1 downloads the bump buffer without the
+        // `debug_layers` feature.
+        let robust =
+            cfg!(feature = "debug_layers") || std::env::var_os("VELLO_EXP_ROBUST").is_some();
         let recording = render.render_encoding_coarse(
             encoding,
             &mut self.resolver,

@@ -843,6 +843,41 @@ impl WgpuEngine {
         entries: Vec<wgpu::BindGroupLayoutEntry>,
         cache: Option<&PipelineCache>,
     ) -> WgpuShader {
+        // TRACERY EXPERIMENT HOOKS (investigation only, not for upstream):
+        // VELLO_EXP_DUMP_DIR=<dir>      write each shader's WGSL to <dir>/<label>.wgsl
+        // VELLO_EXP_SHADER_DIR=<dir>    use <dir>/<label>.wgsl instead of the built-in source
+        // VELLO_EXP_CHECKED=<l1,l2|all> build those shaders with wgpu's checked runtime checks
+        // VELLO_EXP_LOOP_BOUND=<..|all> only turn on naga loop bounding for those shaders
+        let in_list = |key: &str| {
+            std::env::var(key).is_ok_and(|list| {
+                list == "all" || list.split(',').any(|item| item.trim() == label)
+            })
+        };
+        if let Ok(dir) = std::env::var("VELLO_EXP_DUMP_DIR") {
+            let _ = std::fs::create_dir_all(&dir);
+            let _ = std::fs::write(format!("{dir}/{label}.wgsl"), wgsl.as_bytes());
+        }
+        let wgsl = match std::env::var("VELLO_EXP_SHADER_DIR") {
+            Ok(dir) => match std::fs::read_to_string(format!("{dir}/{label}.wgsl")) {
+                Ok(source) => {
+                    log::warn!("vello experiment: {label} from {dir}");
+                    eprintln!("vello experiment: {label} from {dir}");
+                    Cow::Owned(source)
+                }
+                Err(_) => wgsl,
+            },
+            Err(_) => wgsl,
+        };
+        let mut checks = if in_list("VELLO_EXP_CHECKED") {
+            eprintln!("vello experiment: {label} checked");
+            wgpu::ShaderRuntimeChecks::checked()
+        } else {
+            wgpu::ShaderRuntimeChecks::unchecked()
+        };
+        if in_list("VELLO_EXP_LOOP_BOUND") {
+            eprintln!("vello experiment: {label} loop bounding");
+            checks.force_loop_bounding = true;
+        }
         // SAFETY: We only call this with trusted shaders (written by Vello developers)
         let shader_module = unsafe {
             device.create_shader_module_trusted(
@@ -850,7 +885,7 @@ impl WgpuEngine {
                     label: Some(label),
                     source: wgpu::ShaderSource::Wgsl(wgsl),
                 },
-                wgpu::ShaderRuntimeChecks::unchecked(),
+                checks,
             )
         };
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

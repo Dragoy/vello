@@ -183,6 +183,7 @@ impl BumpEstimator {
             seg_counts: n_segments,
             segments: n_segments,
             lines,
+            dbg: [0; 8],
         };
         bump.memory()
     }
